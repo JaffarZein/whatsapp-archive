@@ -804,7 +804,7 @@
           <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg>
         </button>
       </div>
-      <div id="settings" class="">
+      <div id="settings" class="show">
         <div class="item" id="export-shareable">📤 Exporter en fichier partageable</div>
         <div class="item" id="export-viewer-only">🔄 Régénérer le viewer (sans les données)</div>
         <div class="item" id="clear-all">🗑️ Tout effacer</div>
@@ -918,9 +918,9 @@
   <div class="rm-box">
     <h3>✅ Export terminé</h3>
     <div class="rm-step">
-      <strong>1.</strong> Le fichier <code id="rm-filename">archive-Mick-2026-05-01.zip</code> a été téléchargé.
+      <strong>1.</strong> Le fichier <code id="rm-filename">archive-2-conv-2026-05-01.zip</code> a été téléchargé.
     </div>
-    <div class="rm-step" id="rm-step-2"><strong>2.</strong> <strong>Décompresse le ZIP</strong> (clic droit → Extraire). Copie TOUS les fichiers extraits dans le dossier <code>pwa/</code> de ton dépôt GitHub local <strong>sans rien supprimer d'autre</strong>.  Push via GitHub Desktop — il ne commitera que ce qui a réellement changé.</div>
+    <div class="rm-step" id="rm-step-2"><strong>2.</strong> <strong>Décompresse le ZIP</strong> (clic droit → Extraire). Copie TOUS les fichiers extraits dans le dossier <code>pwa/</code> de ton dépôt GitHub local <strong>sans rien supprimer d'autre</strong>. <strong>1 conversation(s) inchangée(s)</strong> n'ont pas été régénérées : leurs chunks restent identiques sur GitHub, donc ton père ne les retéléchargera PAS. Push via GitHub Desktop — il ne commitera que ce qui a réellement changé.</div>
     <div class="rm-step">
       <strong>3.</strong> Une fois GitHub Pages déployé (1-2 min), envoie ce lien à ton destinataire :
     </div>
@@ -940,7 +940,7 @@
 
 <div id="loader" class="show">
   <div class="spinner"></div>
-  <div class="label" id="loader-label">Construction du fichier HTML…</div>
+  <div class="label" id="loader-label">Préparation du viewer…</div>
 </div>
 
 <script>
