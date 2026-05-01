@@ -7,7 +7,7 @@
    Bump CACHE_VERSION whenever you change the shell to force clients to update.
 */
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const SHELL_CACHE = 'wa-archive-shell-' + CACHE_VERSION;
 const SHELL_FILES = [
   './',
