@@ -1,5 +1,5 @@
 /* Service worker for the WhatsApp Archive PWA - auto-generated. */
-const CACHE_VERSION = 'v1777653882592';
+const CACHE_VERSION = 'v1777654523278';
 const SHELL_CACHE = 'wa-archive-shell-' + CACHE_VERSION;
 const SHELL_FILES = [
   './',

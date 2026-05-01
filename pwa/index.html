@@ -956,7 +956,7 @@
   }
 </style>
 </head>
-<body class="chat-active">
+<body>
 <div id="app">
 
   <aside id="sidebar">
@@ -967,7 +967,8 @@
           <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg>
         </button>
       </div>
-      <div id="settings" class="">
+      <div id="settings" class="show">
+        <div class="item" id="install-app-menu">📲 Installer l'application</div>
         <div class="item" id="export-shareable">📤 Exporter en fichier partageable</div>
         <div class="item" id="export-viewer-only">🔄 Régénérer le viewer (sans les données)</div>
         <div class="item" id="clear-all">🗑️ Tout effacer</div>
@@ -987,14 +988,14 @@
   <div id="sidebar-overlay"></div>
 
   <main id="main">
-    <div class="chat-header" id="chat-header" style="display: none;">
+    <div class="chat-header" id="chat-header" style="display:none;">
       <button class="back-btn" id="back-btn" aria-label="Retour">
         <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg>
       </button>
-      <div class="avatar" id="chat-avatar">M</div>
+      <div class="avatar" id="chat-avatar">?</div>
       <div class="info">
-        <div class="name" id="chat-name">Mick</div>
-        <div class="stats" id="chat-stats">3430 messages · 1905 pièces jointes · 02 mai 2025 → 30 avr. 2026</div>
+        <div class="name" id="chat-name"></div>
+        <div class="stats" id="chat-stats"></div>
       </div>
       <button class="swap-btn" id="swap-sender-btn" title="Choisir qui est 'toi' dans cette conversation">
         <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
@@ -1002,7 +1003,7 @@
       </button>
     </div>
     <div id="messages"></div>
-    <div class="empty-state" id="empty-state" style="">
+    <div class="empty-state" id="empty-state">
       <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"></path></svg>
       <h2>Aucune conversation chargée</h2>
       <p>Importe un ou plusieurs fichiers .zip exportés depuis WhatsApp. Tes données restent uniquement sur ton appareil — rien n'est envoyé sur internet.</p>
@@ -1054,32 +1055,11 @@
 </div>
 
 <!-- Sender picker modal -->
-<div id="sender-picker" class="">
+<div id="sender-picker">
   <div class="sp-box">
     <h3>👤 Qui es-tu dans cette conversation ?</h3>
     <div class="sp-subtitle">Choisis l'expéditeur qui te représente. Ses messages s'afficheront en bulles vertes à droite.</div>
-    <div id="sp-options"><div class="sp-option selected">
-      <div class="sp-avatar">M</div>
-      <div class="sp-info">
-        <div class="sp-name">Mick</div>
-        <div class="sp-count">2400 messages</div>
-      </div>
-      <div class="sp-check">✓</div>
-    </div><div class="sp-option">
-      <div class="sp-avatar">B</div>
-      <div class="sp-info">
-        <div class="sp-name">Baba</div>
-        <div class="sp-count">1014 messages</div>
-      </div>
-      <div class="sp-check">✓</div>
-    </div><div class="sp-option">
-      <div class="sp-avatar">A</div>
-      <div class="sp-info">
-        <div class="sp-name">Azhar</div>
-        <div class="sp-count">16 messages</div>
-      </div>
-      <div class="sp-check">✓</div>
-    </div></div>
+    <div id="sp-options"></div>
     <button class="sp-cancel" id="sp-cancel">Annuler</button>
   </div>
 </div>
@@ -1097,7 +1077,7 @@
 </div>
 
 <!-- Export password dialog -->
-<div id="export-pw-modal" class="">
+<div id="export-pw-modal">
   <div class="ep-box">
     <h3>🔐 Chiffrer l'export</h3>
     <p>Un mot de passe fort a été généré automatiquement. Tu pourras le partager dans l'URL pour que ton destinataire ouvre l'archive sans rien saisir.</p>
@@ -1140,7 +1120,7 @@
 
 <div id="loader" class="show">
   <div class="spinner"></div>
-  <div class="label" id="loader-label">Construction du fichier HTML…</div>
+  <div class="label" id="loader-label">Préparation du viewer…</div>
   <div class="progress-wrap" id="progress-wrap">
     <div class="progress-bar">
       <div class="progress-fill" id="progress-fill"></div>
@@ -2795,13 +2775,13 @@ const isEditorMode = window.location.protocol === 'file:' ||
 if (!isEditorMode) document.body.classList.add('viewer-only');
 const installDismissedKey = 'wa-archive-install-dismissed';
 
-// Show install banner if appropriate
+// Show install banner if appropriate.
+// The dismissal is now temporary (24h) so users who tapped × by mistake see it again.
 function maybeShowInstallBanner() {
-  if (isStandalone) return; // Already installed
-  if (localStorage.getItem(installDismissedKey)) return; // User dismissed it
+  if (isStandalone) return; // Already installed (running in standalone mode)
+  const dismissedAt = parseInt(localStorage.getItem(installDismissedKey) || '0', 10);
+  if (dismissedAt && (Date.now() - dismissedAt) < 24 * 60 * 60 * 1000) return; // Dismissed in last 24h
   if (deferredInstallPrompt || isIOS) {
-    // Show immediately so the user can install BEFORE / DURING the long initial download.
-    // The install banner stays clickable thanks to its high z-index even when loader is up.
     installBanner.classList.add('show');
   }
 }
@@ -2827,7 +2807,31 @@ document.getElementById('install-yes').addEventListener('click', async () => {
 
 document.getElementById('install-no').addEventListener('click', () => {
   installBanner.classList.remove('show');
-  localStorage.setItem(installDismissedKey, '1');
+  localStorage.setItem(installDismissedKey, String(Date.now())); // store timestamp, expires after 24h
+});
+
+// Manual trigger from settings menu — works even if banner was dismissed
+document.getElementById('install-app-menu').addEventListener('click', async () => {
+  els.settings.classList.remove('show');
+  if (isStandalone) {
+    alert('L\'application est déjà installée. Tu peux y accéder depuis ton écran d\'accueil.');
+    return;
+  }
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const result = await deferredInstallPrompt.userChoice;
+    dbg.log('Install choice (from menu): ' + result.outcome);
+    deferredInstallPrompt = null;
+  } else if (isIOS) {
+    iosBanner.classList.add('show');
+  } else {
+    alert(
+      'Pour installer l\'application :\n\n' +
+      '1. Tape les 3 points (⋮) en haut à droite de ton navigateur\n' +
+      '2. Choisis "Installer l\'application" ou "Ajouter à l\'écran d\'accueil"\n\n' +
+      'Si cette option n\'apparaît pas, ton navigateur ne supporte pas l\'installation. Essaie avec Chrome.'
+    );
+  }
 });
 
 document.getElementById('ios-close').addEventListener('click', () => {
