@@ -828,10 +828,10 @@
       <button class="back-btn" id="back-btn" aria-label="Retour">
         <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg>
       </button>
-      <div class="avatar" id="chat-avatar">M</div>
+      <div class="avatar" id="chat-avatar">G</div>
       <div class="info">
-        <div class="name" id="chat-name">Mick</div>
-        <div class="stats" id="chat-stats">3430 messages · 1905 pièces jointes · 02 mai 2025 → 30 avr. 2026</div>
+        <div class="name" id="chat-name">Golden Eagle</div>
+        <div class="stats" id="chat-stats">8 messages · 6 pièces jointes · 15 avr. 2026 → 18 avr. 2026</div>
       </div>
     </div>
     <div id="messages"></div>
@@ -914,19 +914,17 @@
 </div>
 
 <!-- Result modal showing the shareable URL -->
-<div id="result-modal">
+<div id="result-modal" class="">
   <div class="rm-box">
     <h3>✅ Export terminé</h3>
     <div class="rm-step">
-      <strong>1.</strong> Le fichier <code id="rm-filename"></code> a été téléchargé.
+      <strong>1.</strong> Le fichier <code id="rm-filename">archive-Mick-2026-05-01.zip</code> a été téléchargé.
     </div>
-    <div class="rm-step" id="rm-step-2">
-      <strong>2.</strong> Renomme-le <code>index.html</code> et upload-le sur ton dépôt GitHub à la place de l'ancien.
-    </div>
+    <div class="rm-step" id="rm-step-2"><strong>2.</strong> <strong>Décompresse le ZIP</strong> (clic droit → Extraire). Copie TOUS les fichiers extraits dans le dossier <code>pwa/</code> de ton dépôt GitHub local <strong>sans rien supprimer d'autre</strong>.  Push via GitHub Desktop — il ne commitera que ce qui a réellement changé.</div>
     <div class="rm-step">
       <strong>3.</strong> Une fois GitHub Pages déployé (1-2 min), envoie ce lien à ton destinataire :
     </div>
-    <div class="rm-url" id="rm-url"></div>
+    <div class="rm-url" id="rm-url">file:///C:/Users/jeffn/OneDrive%20-%20DVHE/claude%20projects/whatsapp%20reader/pwa/#k=ZfeKNUqca7Q6SSQS</div>
     <button class="rm-copy" id="rm-copy">📋 Copier le lien</button>
     <button id="rm-close">Fermer</button>
   </div>
