@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
+<html lang="fr"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#075E54">
@@ -794,7 +793,7 @@
   }
 </style>
 </head>
-<body>
+<body class="chat-active">
 <div id="app">
 
   <aside id="sidebar">
@@ -802,10 +801,10 @@
       <h1>Conversations</h1>
       <div class="actions">
         <button class="icon-btn" id="settings-btn" title="Plus d'options" aria-label="Options">
-          <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg>
         </button>
       </div>
-      <div id="settings">
+      <div id="settings" class="">
         <div class="item" id="export-shareable">📤 Exporter en fichier partageable</div>
         <div class="item" id="clear-all">🗑️ Tout effacer</div>
         <div class="item" id="show-help">❓ Aide / Comment exporter</div>
@@ -814,7 +813,7 @@
 
     <div class="upload-zone">
       <label for="file-input">📂 Importer des conversations</label>
-      <input type="file" id="file-input" multiple>
+      <input type="file" id="file-input" multiple="">
       <div class="hint">Sélectionne un ou plusieurs <strong>.zip</strong> exportés depuis WhatsApp.<br>Sur téléphone, navigue vers ton dossier Téléchargements ou WhatsApp puis choisis le .zip directement.</div>
     </div>
 
@@ -824,19 +823,19 @@
   <div id="sidebar-overlay"></div>
 
   <main id="main">
-    <div class="chat-header" id="chat-header" style="display:none;">
+    <div class="chat-header" id="chat-header" style="display: none;">
       <button class="back-btn" id="back-btn" aria-label="Retour">
-        <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg>
       </button>
-      <div class="avatar" id="chat-avatar">?</div>
+      <div class="avatar" id="chat-avatar">M</div>
       <div class="info">
-        <div class="name" id="chat-name"></div>
-        <div class="stats" id="chat-stats"></div>
+        <div class="name" id="chat-name">Mick</div>
+        <div class="stats" id="chat-stats">3430 messages · 1905 pièces jointes · 02 mai 2025 → 30 avr. 2026</div>
       </div>
     </div>
     <div id="messages"></div>
-    <div class="empty-state" id="empty-state">
-      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+    <div class="empty-state" id="empty-state" style="">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"></path></svg>
       <h2>Aucune conversation chargée</h2>
       <p>Importe un ou plusieurs fichiers .zip exportés depuis WhatsApp. Tes données restent uniquement sur ton appareil — rien n'est envoyé sur internet.</p>
       <button class="import-fallback" id="empty-import-btn">📂 Importer des conversations</button>
@@ -845,10 +844,10 @@
 </div>
 
 <button id="mobile-menu-btn" aria-label="Ouvrir le menu">
-  <svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg>
+  <svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"></path></svg>
 </button>
 
-<div id="debug-log">
+<div id="debug-log" class="">
   <div id="debug-log-header">
     <span>📋 Journal de diagnostic</span>
     <button id="debug-clear">Effacer</button>
@@ -865,7 +864,7 @@
     Ajoutez Archive WhatsApp à votre écran d'accueil pour y accéder en un clic.
   </div>
   <button id="install-yes">Installer</button>
-  <button class="ib-close" id="install-no" aria-label="Plus tard">&times;</button>
+  <button class="ib-close" id="install-no" aria-label="Plus tard">×</button>
 </div>
 
 <!-- iOS install instructions (shown if no native prompt available, e.g. Safari iOS) -->
@@ -899,7 +898,7 @@
 </div>
 
 <!-- Export password dialog -->
-<div id="export-pw-modal">
+<div id="export-pw-modal" class="">
   <div class="ep-box">
     <h3>🔐 Chiffrer l'export</h3>
     <p>Un mot de passe fort a été généré automatiquement. Tu pourras le partager dans l'URL pour que ton destinataire ouvre l'archive sans rien saisir.</p>
@@ -933,16 +932,16 @@
 </div>
 
 <!-- Pre-loaded conversation data (replaced on export) -->
-<script id="preloaded-data" type="application/json">null</script>
+<script id="preloaded-data" type="application/json">{"encrypted":true,"split":true,"chunks":["chunk-001.json","chunk-002.json","chunk-003.json","chunk-004.json","chunk-005.json","chunk-006.json","chunk-007.json","chunk-008.json","chunk-009.json","chunk-010.json"],"salt":"dRQp8OtUYtR4w07J19M0fw==","iv":"qIKj4hE7P35LEu8a","algo":"AES-256-GCM/PBKDF2-SHA256","iter":250000}</script>
 
 <div id="lightbox">
-  <button class="close" aria-label="Fermer">&times;</button>
+  <button class="close" aria-label="Fermer">×</button>
   <img id="lightbox-img" alt="">
 </div>
 
-<div id="loader">
+<div id="loader" class="show">
   <div class="spinner"></div>
-  <div class="label" id="loader-label">Chargement…</div>
+  <div class="label" id="loader-label">Construction du fichier HTML…</div>
 </div>
 
 <script>
@@ -2306,5 +2305,6 @@ dbg.init();
   dbg.log('App ready. Triple-tap "Conversations" to toggle this log.', 'ok');
 })();
 </script>
-</body>
-</html>
+
+
+</body></html>
