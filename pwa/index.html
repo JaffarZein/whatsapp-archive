@@ -956,7 +956,7 @@
   }
 </style>
 </head>
-<body>
+<body class="chat-active">
 <div id="app">
 
   <aside id="sidebar">
@@ -967,7 +967,7 @@
           <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg>
         </button>
       </div>
-      <div id="settings" class="show">
+      <div id="settings" class="">
         <div class="item" id="export-shareable">📤 Exporter en fichier partageable</div>
         <div class="item" id="export-viewer-only">🔄 Régénérer le viewer (sans les données)</div>
         <div class="item" id="clear-all">🗑️ Tout effacer</div>
@@ -987,14 +987,14 @@
   <div id="sidebar-overlay"></div>
 
   <main id="main">
-    <div class="chat-header" id="chat-header" style="display:none;">
+    <div class="chat-header" id="chat-header" style="display: none;">
       <button class="back-btn" id="back-btn" aria-label="Retour">
         <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg>
       </button>
-      <div class="avatar" id="chat-avatar">?</div>
+      <div class="avatar" id="chat-avatar">M</div>
       <div class="info">
-        <div class="name" id="chat-name"></div>
-        <div class="stats" id="chat-stats"></div>
+        <div class="name" id="chat-name">Mick</div>
+        <div class="stats" id="chat-stats">3430 messages · 1905 pièces jointes · 02 mai 2025 → 30 avr. 2026</div>
       </div>
       <button class="swap-btn" id="swap-sender-btn" title="Choisir qui est 'toi' dans cette conversation">
         <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
@@ -1002,7 +1002,7 @@
       </button>
     </div>
     <div id="messages"></div>
-    <div class="empty-state" id="empty-state">
+    <div class="empty-state" id="empty-state" style="">
       <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"></path></svg>
       <h2>Aucune conversation chargée</h2>
       <p>Importe un ou plusieurs fichiers .zip exportés depuis WhatsApp. Tes données restent uniquement sur ton appareil — rien n'est envoyé sur internet.</p>
@@ -1054,11 +1054,32 @@
 </div>
 
 <!-- Sender picker modal -->
-<div id="sender-picker">
+<div id="sender-picker" class="">
   <div class="sp-box">
     <h3>👤 Qui es-tu dans cette conversation ?</h3>
     <div class="sp-subtitle">Choisis l'expéditeur qui te représente. Ses messages s'afficheront en bulles vertes à droite.</div>
-    <div id="sp-options"></div>
+    <div id="sp-options"><div class="sp-option selected">
+      <div class="sp-avatar">M</div>
+      <div class="sp-info">
+        <div class="sp-name">Mick</div>
+        <div class="sp-count">2400 messages</div>
+      </div>
+      <div class="sp-check">✓</div>
+    </div><div class="sp-option">
+      <div class="sp-avatar">B</div>
+      <div class="sp-info">
+        <div class="sp-name">Baba</div>
+        <div class="sp-count">1014 messages</div>
+      </div>
+      <div class="sp-check">✓</div>
+    </div><div class="sp-option">
+      <div class="sp-avatar">A</div>
+      <div class="sp-info">
+        <div class="sp-name">Azhar</div>
+        <div class="sp-count">16 messages</div>
+      </div>
+      <div class="sp-check">✓</div>
+    </div></div>
     <button class="sp-cancel" id="sp-cancel">Annuler</button>
   </div>
 </div>
@@ -1076,7 +1097,7 @@
 </div>
 
 <!-- Export password dialog -->
-<div id="export-pw-modal">
+<div id="export-pw-modal" class="">
   <div class="ep-box">
     <h3>🔐 Chiffrer l'export</h3>
     <p>Un mot de passe fort a été généré automatiquement. Tu pourras le partager dans l'URL pour que ton destinataire ouvre l'archive sans rien saisir.</p>
@@ -1119,7 +1140,7 @@
 
 <div id="loader" class="show">
   <div class="spinner"></div>
-  <div class="label" id="loader-label">Préparation du viewer…</div>
+  <div class="label" id="loader-label">Construction du fichier HTML…</div>
   <div class="progress-wrap" id="progress-wrap">
     <div class="progress-bar">
       <div class="progress-fill" id="progress-fill"></div>
