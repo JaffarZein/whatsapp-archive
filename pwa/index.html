@@ -829,7 +829,7 @@
     <div class="rm-step">
       <strong>1.</strong> Le fichier <code id="rm-filename"></code> a été téléchargé.
     </div>
-    <div class="rm-step">
+    <div class="rm-step" id="rm-step-2">
       <strong>2.</strong> Renomme-le <code>index.html</code> et upload-le sur ton dépôt GitHub à la place de l'ancien.
     </div>
     <div class="rm-step">
@@ -1758,9 +1758,34 @@ async function doExportShareableHTML(password) {
     const encryptedPayload = await encryptPayload(payload, password);
     dbg.log(`Chiffrement OK. Ciphertext: ${humanSize(encryptedPayload.ciphertext.length)}`, 'ok');
 
+    // Chunking: split ciphertext into 18MB pieces (under GitHub web upload limit of 25MB)
+    const CHUNK_SIZE = 18 * 1024 * 1024;
+    const ct = encryptedPayload.ciphertext;
+    const willChunk = ct.length > CHUNK_SIZE;
+    const chunks = [];
+    if (willChunk) {
+      for (let i = 0; i < ct.length; i += CHUNK_SIZE) chunks.push(ct.slice(i, i + CHUNK_SIZE));
+      dbg.log(`Découpage en ${chunks.length} chunks de ~${humanSize(CHUNK_SIZE)}`, 'ok');
+    }
+
+    let manifestPayload;
+    if (willChunk) {
+      manifestPayload = {
+        encrypted: true,
+        split: true,
+        chunks: chunks.map((_, i) => `chunk-${String(i+1).padStart(3, '0')}.json`),
+        salt: encryptedPayload.salt,
+        iv: encryptedPayload.iv,
+        algo: encryptedPayload.algo,
+        iter: encryptedPayload.iter,
+      };
+    } else {
+      manifestPayload = encryptedPayload;
+    }
+
     showLoader('Construction du fichier HTML…');
     const cloned = document.documentElement.cloneNode(true);
-    cloned.querySelector('#preloaded-data').textContent = JSON.stringify(encryptedPayload);
+    cloned.querySelector('#preloaded-data').textContent = JSON.stringify(manifestPayload);
     cloned.querySelector('#conv-list').innerHTML = '';
     cloned.querySelector('#messages').innerHTML = '';
     const ch = cloned.querySelector('#chat-header'); if (ch) ch.style.display = 'none';
@@ -1768,29 +1793,58 @@ async function doExportShareableHTML(password) {
     const dl = cloned.querySelector('#debug-log'); if (dl) { dl.classList.remove('show'); cloned.querySelector('#debug-log-body').innerHTML = ''; }
 
     const html = '<!DOCTYPE html>\n' + cloned.outerHTML;
-    showLoader(`Téléchargement (${humanSize(html.length)})…`);
     dbg.log(`HTML généré: ${humanSize(html.length)}`, 'ok');
 
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
     const date = new Date().toISOString().slice(0, 10);
     const namePart = state.conversations.length === 1
       ? state.conversations[0].name.replace(/[^\w\-]+/g, '_').slice(0, 30)
       : `${state.conversations.length}-conv`;
-    const filename = `index-${namePart}-${date}.html`;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+
+    let downloadFilename;
+    let isZipped = false;
+    if (willChunk) {
+      // Build a zip containing index.html + all chunks
+      showLoader(`Construction du ZIP (${chunks.length} chunks)…`);
+      const zip = new JSZip();
+      zip.file('index.html', html);
+      chunks.forEach((c, i) => {
+        zip.file(`chunk-${String(i+1).padStart(3, '0')}.json`, JSON.stringify({ data: c }));
+      });
+      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+      dbg.log(`ZIP généré: ${humanSize(zipBlob.size)}`, 'ok');
+      downloadFilename = `archive-${namePart}-${date}.zip`;
+      isZipped = true;
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = downloadFilename;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    } else {
+      // Single HTML file fits, use original flow
+      downloadFilename = `index-${namePart}-${date}.html`;
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = downloadFilename;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    }
     hideLoader();
 
     // Build the shareable URL with password in fragment
     const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
     const shareUrl = baseUrl + '#k=' + encodeURIComponent(password);
-    document.getElementById('rm-filename').textContent = filename;
+    document.getElementById('rm-filename').textContent = downloadFilename;
     document.getElementById('rm-url').textContent = shareUrl;
+    // Update step 2 wording depending on zip vs single file
+    const step2El = document.getElementById('rm-step-2');
+    if (step2El) {
+      if (isZipped) {
+        step2El.innerHTML = '<strong>2.</strong> <strong>Décompresse le ZIP</strong> (clic droit → Extraire). Tu obtiens un <code>index.html</code> + plusieurs <code>chunk-XXX.json</code>. Upload TOUS ces fichiers dans le dossier <code>pwa/</code> de ton dépôt GitHub (ils écraseront les anciens).';
+      } else {
+        step2El.innerHTML = '<strong>2.</strong> Renomme-le <code>index.html</code> et upload-le sur ton dépôt GitHub à la place de l\'ancien.';
+      }
+    }
     document.getElementById('result-modal').classList.add('show');
     dbg.log(`URL partage: ${shareUrl}`, 'ok');
   } catch (err) {
@@ -1832,12 +1886,48 @@ async function loadPreloadedData() {
   // Encrypted format
   if (raw.encrypted) {
     dbg.log('Encrypted preload detected. Looking for password…');
+
+    // If split into chunks, fetch them all and reassemble
+    if (raw.split && Array.isArray(raw.chunks)) {
+      showLoader(`Chargement de ${raw.chunks.length} chunks…`);
+      dbg.log(`Chunked archive: ${raw.chunks.length} chunks to fetch`);
+      try {
+        const parts = [];
+        for (let i = 0; i < raw.chunks.length; i++) {
+          showLoader(`Chargement chunk ${i+1}/${raw.chunks.length}…`);
+          const resp = await fetch(raw.chunks[i]);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status} on ${raw.chunks[i]}`);
+          const obj = await resp.json();
+          parts.push(obj.data);
+          dbg.log(`  ✓ ${raw.chunks[i]} (${humanSize(obj.data.length)})`);
+        }
+        const reassembledCipher = parts.join('');
+        dbg.log(`Reassembled ciphertext: ${humanSize(reassembledCipher.length)}`, 'ok');
+        // Replace raw with a non-split encrypted shape so the existing decrypt path works
+        raw = {
+          encrypted: true,
+          salt: raw.salt,
+          iv: raw.iv,
+          algo: raw.algo,
+          iter: raw.iter,
+          ciphertext: reassembledCipher,
+        };
+      } catch (e) {
+        hideLoader();
+        dbg.log(`Chunk fetch failed: ${e.message}`, 'err');
+        alert(`Impossible de charger les données : ${e.message}`);
+        return;
+      }
+      hideLoader();
+    }
+
+    const encShape = raw; // keep for retry on bad password
     const fragMatch = window.location.hash.match(/[#&]k=([^&]+)/);
     let password = fragMatch ? decodeURIComponent(fragMatch[1]) : null;
     if (password) {
       dbg.log('Password found in URL fragment, attempting decrypt…');
       try {
-        raw = await decryptPayload(raw, password);
+        raw = await decryptPayload(encShape, password);
         dbg.log('Decryption OK from URL fragment', 'ok');
       } catch (e) {
         dbg.log('Decrypt with URL password failed: ' + e.message, 'warn');
@@ -1845,14 +1935,12 @@ async function loadPreloadedData() {
       }
     }
     while (!raw.conversations) {
-      // Prompt user
       password = await promptPassword(password === null && fragMatch ? 'Mot de passe incorrect' : '');
       try {
-        raw = await decryptPayload(JSON.parse(document.getElementById('preloaded-data').textContent), password);
+        raw = await decryptPayload(encShape, password);
         dbg.log('Decryption OK from prompt', 'ok');
       } catch (e) {
         dbg.log('Decrypt failed: ' + e.message, 'err');
-        // loop back, asking again
         raw = { conversations: null };
       }
     }

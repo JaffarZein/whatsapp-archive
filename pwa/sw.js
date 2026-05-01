@@ -57,6 +57,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-first for chunk-*.json so updates are picked up automatically
+  if (/\/chunk-\d+\.json$/.test(url.pathname)) {
+    event.respondWith(
+      fetch(req).then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy));
+        }
+        return res;
+      }).catch(() => caches.match(req))
+    );
+    return;
+  }
+
   // Cache-first for everything else (icons, etc.)
   event.respondWith(
     caches.match(req).then((cached) => cached || fetch(req).then((res) => {
