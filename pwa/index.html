@@ -160,6 +160,25 @@
   .chat-header .info { flex: 1; min-width: 0; }
   .chat-header .info .name { font-size: 16px; font-weight: 500; color: #111B21; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .chat-header .info .stats { font-size: 12px; color: #667781; margin-top: 2px; }
+  .chat-header .swap-btn {
+    background: transparent;
+    border: 1px solid #D1D7DB;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 16px;
+    color: #54656F;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: background 0.1s;
+  }
+  .chat-header .swap-btn:hover { background: #F0F2F5; }
+  .chat-header .swap-btn:active { background: #E1E5E8; }
+  .chat-header .swap-btn svg { width: 14px; height: 14px; fill: currentColor; }
+  /* Hide the swap button for deployed (non-editor) viewers */
+  body.viewer-only .chat-header .swap-btn { display: none; }
 
   #messages {
     flex: 1;
@@ -444,22 +463,73 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(255,255,255,0.85);
+    background: rgba(255,255,255,0.92);
     z-index: 999;
     align-items: center;
     justify-content: center;
     flex-direction: column;
     gap: 12px;
+    padding: 20px;
+    text-align: center;
   }
   #loader.show { display: flex; }
   #loader .spinner {
-    width: 40px; height: 40px;
-    border: 3px solid #E1E5E8;
+    width: 48px; height: 48px;
+    border: 4px solid #E1E5E8;
     border-top-color: #00A884;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
-  #loader .label { font-size: 14px; color: #54656F; }
+  #loader .label { font-size: 15px; color: #54656F; font-weight: 500; }
+  #loader .progress-wrap {
+    display: none;
+    width: 320px;
+    max-width: 90vw;
+    margin-top: 4px;
+  }
+  #loader .progress-wrap.show { display: block; }
+  #loader .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #E1E5E8;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  #loader .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00A884, #25D366);
+    width: 0%;
+    transition: width 0.25s ease-out;
+    border-radius: 4px;
+  }
+  #loader .progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #54656F;
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  #loader .progress-text .percent { font-weight: 600; color: #00A884; }
+  #loader .progress-detail {
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+    font-style: italic;
+  }
+  #loader .sub-label {
+    font-size: 13px;
+    color: #667781;
+    max-width: 320px;
+    line-height: 1.5;
+    margin-top: 8px;
+    background: #FFF3CD;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #FFE5A0;
+  }
+  #loader .sub-label.hidden { display: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* === On-screen debug log (auto-shows on errors) === */
@@ -596,7 +666,7 @@
     background: #075E54;
     color: #fff;
     padding: 14px 16px;
-    z-index: 80;
+    z-index: 1100; /* Above loader (999) so it stays clickable during downloads */
     box-shadow: 0 -3px 12px rgba(0,0,0,0.25);
     font-size: 14px;
     line-height: 1.4;
@@ -768,6 +838,99 @@
   #result-modal button { width: 100%; padding: 12px; background: #00A884; color: #fff; border: none; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; }
   #result-modal .rm-copy { background: #075E54; }
 
+  /* Sender picker modal */
+  #sender-picker {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1500;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #sender-picker.show { display: flex; }
+  #sender-picker .sp-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 22px;
+    max-width: 420px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  #sender-picker h3 { color: #075E54; margin-bottom: 4px; font-size: 17px; }
+  #sender-picker .sp-subtitle { font-size: 13px; color: #54656F; margin-bottom: 16px; }
+  #sender-picker .sp-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1.5px solid #E1E5E8;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  #sender-picker .sp-option:hover { border-color: #00A884; background: #F0FBF7; }
+  #sender-picker .sp-option.selected {
+    border-color: #00A884;
+    background: #E6F7F2;
+  }
+  #sender-picker .sp-option .sp-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #DFE5E7;
+    color: #54656F;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    flex-shrink: 0;
+    font-size: 15px;
+  }
+  #sender-picker .sp-option.selected .sp-avatar {
+    background: #00A884;
+    color: #fff;
+  }
+  #sender-picker .sp-option .sp-info { flex: 1; min-width: 0; }
+  #sender-picker .sp-option .sp-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #111B21;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #sender-picker .sp-option .sp-count { font-size: 12px; color: #667781; margin-top: 2px; }
+  #sender-picker .sp-option .sp-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #00A884;
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  #sender-picker .sp-option.selected .sp-check { display: flex; }
+  #sender-picker .sp-cancel {
+    width: 100%;
+    padding: 10px;
+    background: #F0F2F5;
+    color: #54656F;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+  #sender-picker .sp-cancel:hover { background: #E1E5E8; }
+
   /* Update notification */
   #update-banner {
     display: none;
@@ -793,7 +956,7 @@
   }
 </style>
 </head>
-<body class="chat-active">
+<body>
 <div id="app">
 
   <aside id="sidebar">
@@ -824,18 +987,22 @@
   <div id="sidebar-overlay"></div>
 
   <main id="main">
-    <div class="chat-header" id="chat-header" style="display: none;">
+    <div class="chat-header" id="chat-header" style="display:none;">
       <button class="back-btn" id="back-btn" aria-label="Retour">
         <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg>
       </button>
-      <div class="avatar" id="chat-avatar">G</div>
+      <div class="avatar" id="chat-avatar">?</div>
       <div class="info">
-        <div class="name" id="chat-name">Golden Eagle</div>
-        <div class="stats" id="chat-stats">8 messages · 6 pièces jointes · 15 avr. 2026 → 18 avr. 2026</div>
+        <div class="name" id="chat-name"></div>
+        <div class="stats" id="chat-stats"></div>
       </div>
+      <button class="swap-btn" id="swap-sender-btn" title="Choisir qui est 'toi' dans cette conversation">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
+        <span>Mon côté</span>
+      </button>
     </div>
     <div id="messages"></div>
-    <div class="empty-state" id="empty-state" style="">
+    <div class="empty-state" id="empty-state">
       <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"></path></svg>
       <h2>Aucune conversation chargée</h2>
       <p>Importe un ou plusieurs fichiers .zip exportés depuis WhatsApp. Tes données restent uniquement sur ton appareil — rien n'est envoyé sur internet.</p>
@@ -886,6 +1053,16 @@
   <button id="update-yes">Recharger</button>
 </div>
 
+<!-- Sender picker modal -->
+<div id="sender-picker">
+  <div class="sp-box">
+    <h3>👤 Qui es-tu dans cette conversation ?</h3>
+    <div class="sp-subtitle">Choisis l'expéditeur qui te représente. Ses messages s'afficheront en bulles vertes à droite.</div>
+    <div id="sp-options"></div>
+    <button class="sp-cancel" id="sp-cancel">Annuler</button>
+  </div>
+</div>
+
 <!-- Password modal (shown when encrypted data needs decrypting) -->
 <div id="password-modal">
   <div class="pm-box">
@@ -899,7 +1076,7 @@
 </div>
 
 <!-- Export password dialog -->
-<div id="export-pw-modal" class="">
+<div id="export-pw-modal">
   <div class="ep-box">
     <h3>🔐 Chiffrer l'export</h3>
     <p>Un mot de passe fort a été généré automatiquement. Tu pourras le partager dans l'URL pour que ton destinataire ouvre l'archive sans rien saisir.</p>
@@ -914,17 +1091,19 @@
 </div>
 
 <!-- Result modal showing the shareable URL -->
-<div id="result-modal" class="">
+<div id="result-modal">
   <div class="rm-box">
     <h3>✅ Export terminé</h3>
     <div class="rm-step">
-      <strong>1.</strong> Le fichier <code id="rm-filename">archive-2-conv-2026-05-01.zip</code> a été téléchargé.
+      <strong>1.</strong> Le fichier <code id="rm-filename"></code> a été téléchargé.
     </div>
-    <div class="rm-step" id="rm-step-2"><strong>2.</strong> <strong>Décompresse le ZIP</strong> (clic droit → Extraire). Copie TOUS les fichiers extraits dans le dossier <code>pwa/</code> de ton dépôt GitHub local <strong>sans rien supprimer d'autre</strong>. <strong>1 conversation(s) inchangée(s)</strong> n'ont pas été régénérées : leurs chunks restent identiques sur GitHub, donc ton père ne les retéléchargera PAS. Push via GitHub Desktop — il ne commitera que ce qui a réellement changé.</div>
+    <div class="rm-step" id="rm-step-2">
+      <strong>2.</strong> Renomme-le <code>index.html</code> et upload-le sur ton dépôt GitHub à la place de l'ancien.
+    </div>
     <div class="rm-step">
       <strong>3.</strong> Une fois GitHub Pages déployé (1-2 min), envoie ce lien à ton destinataire :
     </div>
-    <div class="rm-url" id="rm-url">file:///C:/Users/jeffn/OneDrive%20-%20DVHE/claude%20projects/whatsapp%20reader/pwa/#k=ZfeKNUqca7Q6SSQS</div>
+    <div class="rm-url" id="rm-url"></div>
     <button class="rm-copy" id="rm-copy">📋 Copier le lien</button>
     <button id="rm-close">Fermer</button>
   </div>
@@ -941,6 +1120,20 @@
 <div id="loader" class="show">
   <div class="spinner"></div>
   <div class="label" id="loader-label">Préparation du viewer…</div>
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-text">
+      <span id="progress-text-left">0 / 0 chunks</span>
+      <span class="percent" id="progress-percent">0%</span>
+    </div>
+    <div class="progress-detail" id="progress-detail"></div>
+  </div>
+  <div class="sub-label hidden" id="loader-sub">
+    💡 Tu peux installer l'application <strong>pendant</strong> ce téléchargement (bouton vert en bas).
+    Le téléchargement continue, et tu n'auras pas besoin de tout recharger ensuite.
+  </div>
 </div>
 
 <script>
@@ -1414,7 +1607,8 @@ function selectConversation(id) {
 function renderMessages(conv) {
   els.messages.innerHTML = '';
   let lastDateKey = null;
-  // Determine "you" = most frequent sender (heuristic: usually the user exports their own chats and is most active)
+  // Determine "you": use manual override (conv.youSender) if set AND it matches a real sender,
+  // otherwise auto-detect (most frequent sender = usually the user).
   const senderCounts = {};
   for (const m of conv.messages) {
     if (m.sender && m.sender !== 'system') {
@@ -1422,11 +1616,11 @@ function renderMessages(conv) {
     }
   }
   const sortedSenders = Object.entries(senderCounts).sort((a, b) => b[1] - a[1]);
-  // If exactly 2 senders, "you" = the most active. If only 1, treat as you.
   let youSender = null;
-  if (sortedSenders.length === 1) {
-    youSender = sortedSenders[0][0];
-  } else if (sortedSenders.length >= 2) {
+  // Validate manual override against actual senders
+  if (conv.youSender && sortedSenders.some(([s]) => s === conv.youSender)) {
+    youSender = conv.youSender;
+  } else if (sortedSenders.length >= 1) {
     youSender = sortedSenders[0][0];
   }
 
@@ -1744,8 +1938,32 @@ function mimeFor(ext) {
 
 /* ============== UI controls ============== */
 
-function showLoader(label) { els.loaderLabel.textContent = label || 'Chargement…'; els.loader.classList.add('show'); }
-function hideLoader() { els.loader.classList.remove('show'); }
+function showLoader(label, withInstallHint) {
+  els.loaderLabel.textContent = label || 'Chargement…';
+  els.loader.classList.add('show');
+  const sub = document.getElementById('loader-sub');
+  if (sub) sub.classList.toggle('hidden', !withInstallHint);
+}
+function hideLoader() {
+  els.loader.classList.remove('show');
+  const sub = document.getElementById('loader-sub');
+  if (sub) sub.classList.add('hidden');
+  hideProgress();
+}
+function showProgress() {
+  document.getElementById('progress-wrap').classList.add('show');
+}
+function hideProgress() {
+  document.getElementById('progress-wrap').classList.remove('show');
+}
+function updateProgress(done, total, bytesLoaded, detailText) {
+  const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text-left').textContent =
+    done + ' / ' + total + ' chunks' + (bytesLoaded ? ' · ' + humanSize(bytesLoaded) : '');
+  document.getElementById('progress-percent').textContent = pct + '%';
+  document.getElementById('progress-detail').textContent = detailText || '';
+}
 
 els.backBtn.addEventListener('click', openSidebar);
 els.sidebarOverlay.addEventListener('click', closeSidebar);
@@ -1785,6 +2003,52 @@ els.clearAll.addEventListener('click', () => {
   els.emptyState.style.display = 'flex';
   document.body.classList.remove('chat-active');
   renderConvList();
+});
+
+// Open the sender picker modal — user chooses who they are by name.
+document.getElementById('swap-sender-btn').addEventListener('click', () => {
+  const conv = state.conversations.find(c => c.id === state.activeId);
+  if (!conv) return;
+  const senderCounts = {};
+  for (const m of conv.messages) {
+    if (m.sender && m.sender !== 'system') {
+      senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1;
+    }
+  }
+  const sortedSenders = Object.entries(senderCounts).sort((a, b) => b[1] - a[1]);
+  if (sortedSenders.length < 1) {
+    alert('Aucun expéditeur détecté dans cette conversation.');
+    return;
+  }
+  const currentYou = conv.youSender || sortedSenders[0][0];
+
+  const optionsEl = document.getElementById('sp-options');
+  optionsEl.innerHTML = '';
+  for (const [sender, count] of sortedSenders) {
+    const opt = document.createElement('div');
+    opt.className = 'sp-option' + (sender === currentYou ? ' selected' : '');
+    const initial = (sender || '?').trim().charAt(0).toUpperCase();
+    opt.innerHTML = `
+      <div class="sp-avatar">${escapeHTML(initial)}</div>
+      <div class="sp-info">
+        <div class="sp-name">${escapeHTML(sender)}</div>
+        <div class="sp-count">${count} message${count > 1 ? 's' : ''}</div>
+      </div>
+      <div class="sp-check">✓</div>
+    `;
+    opt.addEventListener('click', () => {
+      conv.youSender = sender;
+      dbg.log(`Mon côté → "${sender}" dans "${conv.name}"`);
+      document.getElementById('sender-picker').classList.remove('show');
+      renderMessages(conv);
+    });
+    optionsEl.appendChild(opt);
+  }
+  document.getElementById('sender-picker').classList.add('show');
+});
+
+document.getElementById('sp-cancel').addEventListener('click', () => {
+  document.getElementById('sender-picker').classList.remove('show');
 });
 
 // Mobile floating menu button — opens the sidebar
@@ -1829,11 +2093,13 @@ function canonicalize(obj) {
 }
 
 async function conversationContentHash(conv) {
-  // Only hash the *content* fields. Sort message keys, include filenames + base64 of files.
+  // Hash *content* + youSender choice. Sort message keys, include filenames + base64 of files.
+  // Including youSender means swapping perspective regenerates the chunks (correct behavior).
   const filesObj = {};
   for (const [k, v] of Object.entries(conv.files || {})) filesObj[k] = v;
   const payload = {
     name: conv.name,
+    youSender: conv.youSender || null,
     messages: conv.messages.map(m => ({
       sender: m.sender || null,
       timestamp: m.timestamp || null,
@@ -2071,8 +2337,18 @@ async function doExportShareableHTML(password) {
         ...m,
         timestamp: m.timestamp ? m.timestamp.toISOString() : null,
       }));
-      const convPayload = { name: conv.name, messages: messagesNorm, files };
-      const cHash = await conversationContentHash({ name: conv.name, messages: messagesNorm, files });
+      const convPayload = {
+        name: conv.name,
+        messages: messagesNorm,
+        files,
+        youSender: conv.youSender || null,
+      };
+      const cHash = await conversationContentHash({
+        name: conv.name,
+        youSender: conv.youSender || null,
+        messages: messagesNorm,
+        files,
+      });
 
       // Cached entry?
       const prev = cache[cHash];
@@ -2326,15 +2602,26 @@ async function loadPreloadedData() {
       }
       // Decrypt all conversations one by one
       const allDecrypted = [];
+      const showInstallHint = !isStandalone;
+      const totalChunks = raw.conversations.reduce((s, c) => s + c.chunks.length, 0);
+      let chunksDone = 0;
+      let bytesLoaded = 0;
+      showProgress();
+      updateProgress(0, totalChunks, 0, '');
       for (let ci = 0; ci < raw.conversations.length; ci++) {
         const cv = raw.conversations[ci];
-        showLoader(`Chargement ${ci+1}/${raw.conversations.length} : ${cv.name}…`);
+        showLoader(`Chargement de "${cv.name}" (${ci+1}/${raw.conversations.length})`, showInstallHint);
         try {
           const parts = [];
           for (let i = 0; i < cv.chunks.length; i++) {
             const r = await fetch(cv.chunks[i], { cache: 'force-cache' });
             if (!r.ok) throw new Error(`HTTP ${r.status} sur ${cv.chunks[i]}`);
-            parts.push((await r.json()).data);
+            const txt = await r.text();
+            bytesLoaded += txt.length;
+            parts.push(JSON.parse(txt).data);
+            chunksDone++;
+            updateProgress(chunksDone, totalChunks, bytesLoaded,
+              `Conv ${ci+1}/${raw.conversations.length} · chunk ${i+1}/${cv.chunks.length}`);
           }
           const decrypted = await decryptPayload({
             encrypted: true,
@@ -2348,6 +2635,7 @@ async function loadPreloadedData() {
           dbg.log(`  ✗ Échec "${cv.name}": ${e.message}`, 'err');
         }
       }
+      hideProgress();
       hideLoader();
       raw = { conversations: allDecrypted };
     }
@@ -2355,17 +2643,22 @@ async function loadPreloadedData() {
     else {
       // If split into chunks, fetch them all and reassemble
       if (raw.split && Array.isArray(raw.chunks)) {
-        showLoader(`Chargement de ${raw.chunks.length} chunks…`);
+        const showInstallHint = !isStandalone;
+        showLoader(`Chargement de ${raw.chunks.length} chunks…`, showInstallHint);
+        showProgress();
+        updateProgress(0, raw.chunks.length, 0, '');
+        let bytesLoaded = 0;
         dbg.log(`Chunked archive (legacy v1): ${raw.chunks.length} chunks to fetch`);
         try {
           const parts = [];
           for (let i = 0; i < raw.chunks.length; i++) {
-            showLoader(`Chargement chunk ${i+1}/${raw.chunks.length}…`);
             const resp = await fetch(raw.chunks[i]);
             if (!resp.ok) throw new Error(`HTTP ${resp.status} on ${raw.chunks[i]}`);
-            const obj = await resp.json();
-            parts.push(obj.data);
-            dbg.log(`  ✓ ${raw.chunks[i]} (${humanSize(obj.data.length)})`);
+            const txt = await resp.text();
+            bytesLoaded += txt.length;
+            parts.push(JSON.parse(txt).data);
+            updateProgress(i+1, raw.chunks.length, bytesLoaded, `chunk ${i+1}/${raw.chunks.length}`);
+            dbg.log(`  ✓ ${raw.chunks[i]} (${humanSize(txt.length)})`);
           }
           const reassembledCipher = parts.join('');
           raw = {
@@ -2382,6 +2675,7 @@ async function loadPreloadedData() {
           alert(`Impossible de charger les données : ${e.message}`);
           return;
         }
+        hideProgress();
         hideLoader();
       }
 
@@ -2430,6 +2724,7 @@ async function loadPreloadedData() {
     state.conversations.push({
       id: 'pre-' + state.conversations.length + '-' + Math.random().toString(36).slice(2,8),
       name: c.name,
+      youSender: c.youSender || null,
       messages,
       files,
       stats: computeStats(messages),
@@ -2472,6 +2767,11 @@ const updateBanner = document.getElementById('update-banner');
 // Detect platform
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+// Editor mode: this is the local viewer used to import/export. Deployed instances run as "viewer-only".
+const isEditorMode = window.location.protocol === 'file:' ||
+                     window.location.hostname === 'localhost' ||
+                     window.location.hostname === '127.0.0.1';
+if (!isEditorMode) document.body.classList.add('viewer-only');
 const installDismissedKey = 'wa-archive-install-dismissed';
 
 // Show install banner if appropriate
@@ -2479,7 +2779,9 @@ function maybeShowInstallBanner() {
   if (isStandalone) return; // Already installed
   if (localStorage.getItem(installDismissedKey)) return; // User dismissed it
   if (deferredInstallPrompt || isIOS) {
-    setTimeout(() => installBanner.classList.add('show'), 1500);
+    // Show immediately so the user can install BEFORE / DURING the long initial download.
+    // The install banner stays clickable thanks to its high z-index even when loader is up.
+    installBanner.classList.add('show');
   }
 }
 
@@ -2515,6 +2817,29 @@ window.addEventListener('appinstalled', () => {
   installBanner.classList.remove('show');
   dbg.log('PWA installed successfully', 'ok');
 });
+
+// Request persistent storage so Android NEVER evicts the cached chunks
+// even under low-storage pressure. Silently no-ops if unsupported.
+if (navigator.storage && navigator.storage.persist) {
+  navigator.storage.persisted().then((isPersisted) => {
+    if (!isPersisted) {
+      navigator.storage.persist().then((granted) => {
+        dbg.log('Persistent storage ' + (granted ? 'GRANTED ✓' : 'denied'), granted ? 'ok' : 'warn');
+      }).catch(() => {});
+    } else {
+      dbg.log('Storage already persisted ✓', 'ok');
+    }
+  }).catch(() => {});
+}
+
+// Estimate cache usage for diagnostics
+if (navigator.storage && navigator.storage.estimate) {
+  navigator.storage.estimate().then((est) => {
+    if (est.usage && est.quota) {
+      dbg.log(`Stockage utilisé: ${humanSize(est.usage)} / ${humanSize(est.quota)} disponible`);
+    }
+  }).catch(() => {});
+}
 
 // Register the service worker for offline use + update detection
 if ('serviceWorker' in navigator) {
@@ -2564,8 +2889,8 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// On iOS or first load without prompt, show banner anyway after a short delay
-setTimeout(maybeShowInstallBanner, 2000);
+// On iOS or first load without prompt, show banner anyway (immediately)
+maybeShowInstallBanner();
 
 // Initial state
 dbg.init();
