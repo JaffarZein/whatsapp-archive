@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
+<html lang="fr"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#075E54">
@@ -794,7 +793,7 @@
   }
 </style>
 </head>
-<body>
+<body class="chat-active">
 <div id="app">
 
   <aside id="sidebar">
@@ -802,10 +801,10 @@
       <h1>Conversations</h1>
       <div class="actions">
         <button class="icon-btn" id="settings-btn" title="Plus d'options" aria-label="Options">
-          <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg>
         </button>
       </div>
-      <div id="settings">
+      <div id="settings" class="">
         <div class="item" id="export-shareable">📤 Exporter en fichier partageable</div>
         <div class="item" id="clear-all">🗑️ Tout effacer</div>
         <div class="item" id="show-help">❓ Aide / Comment exporter</div>
@@ -814,7 +813,7 @@
 
     <div class="upload-zone">
       <label for="file-input">📂 Importer des conversations</label>
-      <input type="file" id="file-input" multiple>
+      <input type="file" id="file-input" multiple="">
       <div class="hint">Sélectionne un ou plusieurs <strong>.zip</strong> exportés depuis WhatsApp.<br>Sur téléphone, navigue vers ton dossier Téléchargements ou WhatsApp puis choisis le .zip directement.</div>
     </div>
 
@@ -824,19 +823,19 @@
   <div id="sidebar-overlay"></div>
 
   <main id="main">
-    <div class="chat-header" id="chat-header" style="display:none;">
+    <div class="chat-header" id="chat-header" style="display: none;">
       <button class="back-btn" id="back-btn" aria-label="Retour">
-        <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg>
       </button>
-      <div class="avatar" id="chat-avatar">?</div>
+      <div class="avatar" id="chat-avatar">M</div>
       <div class="info">
-        <div class="name" id="chat-name"></div>
-        <div class="stats" id="chat-stats"></div>
+        <div class="name" id="chat-name">Mick</div>
+        <div class="stats" id="chat-stats">3430 messages · 1905 pièces jointes · 02 mai 2025 → 30 avr. 2026</div>
       </div>
     </div>
     <div id="messages"></div>
-    <div class="empty-state" id="empty-state">
-      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+    <div class="empty-state" id="empty-state" style="">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"></path></svg>
       <h2>Aucune conversation chargée</h2>
       <p>Importe un ou plusieurs fichiers .zip exportés depuis WhatsApp. Tes données restent uniquement sur ton appareil — rien n'est envoyé sur internet.</p>
       <button class="import-fallback" id="empty-import-btn">📂 Importer des conversations</button>
@@ -845,7 +844,7 @@
 </div>
 
 <button id="mobile-menu-btn" aria-label="Ouvrir le menu">
-  <svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg>
+  <svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"></path></svg>
 </button>
 
 <div id="debug-log">
@@ -865,7 +864,7 @@
     Ajoutez Archive WhatsApp à votre écran d'accueil pour y accéder en un clic.
   </div>
   <button id="install-yes">Installer</button>
-  <button class="ib-close" id="install-no" aria-label="Plus tard">&times;</button>
+  <button class="ib-close" id="install-no" aria-label="Plus tard">×</button>
 </div>
 
 <!-- iOS install instructions (shown if no native prompt available, e.g. Safari iOS) -->
@@ -899,7 +898,7 @@
 </div>
 
 <!-- Export password dialog -->
-<div id="export-pw-modal">
+<div id="export-pw-modal" class="">
   <div class="ep-box">
     <h3>🔐 Chiffrer l'export</h3>
     <p>Un mot de passe fort a été généré automatiquement. Tu pourras le partager dans l'URL pour que ton destinataire ouvre l'archive sans rien saisir.</p>
@@ -933,16 +932,16 @@
 </div>
 
 <!-- Pre-loaded conversation data (replaced on export) -->
-<script id="preloaded-data" type="application/json">null</script>
+<script id="preloaded-data" type="application/json">{"encrypted":true,"split":true,"chunks":["chunk-001.json","chunk-002.json","chunk-003.json","chunk-004.json","chunk-005.json","chunk-006.json","chunk-007.json","chunk-008.json","chunk-009.json","chunk-010.json"],"salt":"j11B14AwN6TJ8Xl0jzblUA==","iv":"gRiRj0nmPlCl+mA3","algo":"AES-256-GCM/PBKDF2-SHA256","iter":250000}</script>
 
 <div id="lightbox">
-  <button class="close" aria-label="Fermer">&times;</button>
+  <button class="close" aria-label="Fermer">×</button>
   <img id="lightbox-img" alt="">
 </div>
 
-<div id="loader">
+<div id="loader" class="show">
   <div class="spinner"></div>
-  <div class="label" id="loader-label">Chargement…</div>
+  <div class="label" id="loader-label">Construction du fichier HTML…</div>
 </div>
 
 <script>
@@ -1866,86 +1865,6 @@ async function decryptPayload(encObj, password) {
   return JSON.parse(new TextDecoder().decode(plaintext));
 }
 
-/* ============== Service worker template (regenerated on every export) ============== */
-
-const SW_TEMPLATE = `/* Service worker for the WhatsApp Archive PWA - auto-generated. */
-const CACHE_VERSION = '__VERSION__';
-const SHELL_CACHE = 'wa-archive-shell-' + CACHE_VERSION;
-const SHELL_FILES = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  './icon-maskable-192.png',
-  './icon-maskable-512.png',
-  './favicon.png',
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_FILES))
-      .then(() => self.skipWaiting())
-  );
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(
-        keys.filter((k) => k.startsWith('wa-archive-') && k !== SHELL_CACHE)
-            .map((k) => caches.delete(k))
-      ))
-      .then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
-
-  if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) {
-    event.respondWith(
-      fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy));
-        return res;
-      }).catch(() => caches.match(req).then((c) => c || caches.match('./index.html')))
-    );
-    return;
-  }
-
-  if (/\\/chunk-\\d+\\.json$/.test(url.pathname)) {
-    event.respondWith(
-      fetch(req).then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy));
-        }
-        return res;
-      }).catch(() => caches.match(req))
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-      if (res.ok) {
-        const copy = res.clone();
-        caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy));
-      }
-      return res;
-    }))
-  );
-});
-
-self.addEventListener('message', (event) => {
-  if (event.data === 'SKIP_WAITING') self.skipWaiting();
-});
-`;
-
 /* ============== Shareable export ============== */
 
 // Convert a Uint8Array to base64 in chunks (atob/btoa would blow the stack on big files)
@@ -2080,20 +1999,13 @@ async function doExportShareableHTML(password) {
       ? state.conversations[0].name.replace(/[^\w\-]+/g, '_').slice(0, 30)
       : `${state.conversations.length}-conv`;
 
-    // Generate a fresh sw.js with a unique cache version (timestamp-based)
-    // → guarantees that visitors auto-detect the new deployment without manual edit
-    const swVersion = 'v' + Date.now();
-    const swContent = SW_TEMPLATE.replace('__VERSION__', swVersion);
-    dbg.log(`SW généré avec CACHE_VERSION=${swVersion}`, 'ok');
-
     let downloadFilename;
     let isZipped = false;
     if (willChunk) {
-      // Build a zip containing index.html + sw.js + all chunks
+      // Build a zip containing index.html + all chunks
       showLoader(`Construction du ZIP (${chunks.length} chunks)…`);
       const zip = new JSZip();
       zip.file('index.html', html);
-      zip.file('sw.js', swContent);
       chunks.forEach((c, i) => {
         zip.file(`chunk-${String(i+1).padStart(3, '0')}.json`, JSON.stringify({ data: c }));
       });
@@ -2107,16 +2019,10 @@ async function doExportShareableHTML(password) {
       document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
     } else {
-      // Single HTML fits — but we still want to bundle a fresh sw.js for cache busting.
-      // Use a small ZIP for consistency.
-      showLoader('Construction du ZIP…');
-      const zip = new JSZip();
-      zip.file('index.html', html);
-      zip.file('sw.js', swContent);
-      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-      downloadFilename = `archive-${namePart}-${date}.zip`;
-      isZipped = true;
-      const url = URL.createObjectURL(zipBlob);
+      // Single HTML file fits, use original flow
+      downloadFilename = `index-${namePart}-${date}.html`;
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = downloadFilename;
       document.body.appendChild(a); a.click();
@@ -2129,10 +2035,14 @@ async function doExportShareableHTML(password) {
     const shareUrl = baseUrl + '#k=' + encodeURIComponent(password);
     document.getElementById('rm-filename').textContent = downloadFilename;
     document.getElementById('rm-url').textContent = shareUrl;
-    // Update step 2 wording
+    // Update step 2 wording depending on zip vs single file
     const step2El = document.getElementById('rm-step-2');
     if (step2El) {
-      step2El.innerHTML = '<strong>2.</strong> <strong>Décompresse le ZIP</strong> (clic droit → Extraire). Copie TOUS les fichiers extraits (<code>index.html</code>, <code>sw.js</code>, et les <code>chunk-*.json</code>) dans le dossier <code>pwa/</code> de ton dépôt GitHub local, puis push via GitHub Desktop. Le <code>sw.js</code> est régénéré à chaque export pour que les destinataires détectent automatiquement la nouvelle version.';
+      if (isZipped) {
+        step2El.innerHTML = '<strong>2.</strong> <strong>Décompresse le ZIP</strong> (clic droit → Extraire). Tu obtiens un <code>index.html</code> + plusieurs <code>chunk-XXX.json</code>. Upload TOUS ces fichiers dans le dossier <code>pwa/</code> de ton dépôt GitHub (ils écraseront les anciens).';
+      } else {
+        step2El.innerHTML = '<strong>2.</strong> Renomme-le <code>index.html</code> et upload-le sur ton dépôt GitHub à la place de l\'ancien.';
+      }
     }
     document.getElementById('result-modal').classList.add('show');
     dbg.log(`URL partage: ${shareUrl}`, 'ok');
@@ -2405,5 +2315,6 @@ dbg.init();
   dbg.log('App ready. Triple-tap "Conversations" to toggle this log.', 'ok');
 })();
 </script>
-</body>
-</html>
+
+
+</body><f393c691-0348-4e98-a469-8f68f623564f></f393c691-0348-4e98-a469-8f68f623564f></html>
