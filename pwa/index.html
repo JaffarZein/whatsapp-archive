@@ -806,6 +806,7 @@
       </div>
       <div id="settings" class="">
         <div class="item" id="export-shareable">📤 Exporter en fichier partageable</div>
+        <div class="item" id="export-viewer-only">🔄 Régénérer le viewer (sans les données)</div>
         <div class="item" id="clear-all">🗑️ Tout effacer</div>
         <div class="item" id="show-help">❓ Aide / Comment exporter</div>
       </div>
@@ -932,7 +933,7 @@
 </div>
 
 <!-- Pre-loaded conversation data (replaced on export) -->
-<script id="preloaded-data" type="application/json">{"encrypted":true,"split":true,"chunks":["chunk-001.json","chunk-002.json","chunk-003.json","chunk-004.json","chunk-005.json","chunk-006.json","chunk-007.json","chunk-008.json","chunk-009.json","chunk-010.json"],"salt":"j11B14AwN6TJ8Xl0jzblUA==","iv":"gRiRj0nmPlCl+mA3","algo":"AES-256-GCM/PBKDF2-SHA256","iter":250000}</script>
+<script id="preloaded-data" type="application/json">null</script>
 
 <div id="lightbox">
   <button class="close" aria-label="Fermer">×</button>
@@ -1865,6 +1866,86 @@ async function decryptPayload(encObj, password) {
   return JSON.parse(new TextDecoder().decode(plaintext));
 }
 
+/* ============== Service worker template (regenerated on every export) ============== */
+
+const SW_TEMPLATE = `/* Service worker for the WhatsApp Archive PWA - auto-generated. */
+const CACHE_VERSION = '__VERSION__';
+const SHELL_CACHE = 'wa-archive-shell-' + CACHE_VERSION;
+const SHELL_FILES = [
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-maskable-192.png',
+  './icon-maskable-512.png',
+  './favicon.png',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_FILES))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys.filter((k) => k.startsWith('wa-archive-') && k !== SHELL_CACHE)
+            .map((k) => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) {
+    event.respondWith(
+      fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy));
+        return res;
+      }).catch(() => caches.match(req).then((c) => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  if (/\\/chunk-\\d+\\.json$/.test(url.pathname)) {
+    event.respondWith(
+      fetch(req).then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy));
+        }
+        return res;
+      }).catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(req).then((cached) => cached || fetch(req).then((res) => {
+      if (res.ok) {
+        const copy = res.clone();
+        caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy));
+      }
+      return res;
+    }))
+  );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
+});
+`;
+
 /* ============== Shareable export ============== */
 
 // Convert a Uint8Array to base64 in chunks (atob/btoa would blow the stack on big files)
@@ -1984,7 +2065,9 @@ async function doExportShareableHTML(password) {
 
     showLoader('Construction du fichier HTML…');
     const cloned = document.documentElement.cloneNode(true);
-    cloned.querySelector('#preloaded-data').textContent = JSON.stringify(manifestPayload);
+    // IMPORTANT: keep preloaded-data as null. Manifest goes into a separate data.json.
+    // This decouples viewer code from conversation data — viewer can be updated independently.
+    cloned.querySelector('#preloaded-data').textContent = 'null';
     cloned.querySelector('#conv-list').innerHTML = '';
     cloned.querySelector('#messages').innerHTML = '';
     const ch = cloned.querySelector('#chat-header'); if (ch) ch.style.display = 'none';
@@ -1992,42 +2075,41 @@ async function doExportShareableHTML(password) {
     const dl = cloned.querySelector('#debug-log'); if (dl) { dl.classList.remove('show'); cloned.querySelector('#debug-log-body').innerHTML = ''; }
 
     const html = '<!DOCTYPE html>\n' + cloned.outerHTML;
-    dbg.log(`HTML généré: ${humanSize(html.length)}`, 'ok');
+    const dataJson = JSON.stringify(manifestPayload);
+    dbg.log(`HTML généré: ${humanSize(html.length)} | data.json: ${humanSize(dataJson.length)}`, 'ok');
 
     const date = new Date().toISOString().slice(0, 10);
     const namePart = state.conversations.length === 1
       ? state.conversations[0].name.replace(/[^\w\-]+/g, '_').slice(0, 30)
       : `${state.conversations.length}-conv`;
 
+    // Generate a fresh sw.js with a unique cache version (timestamp-based)
+    // → guarantees that visitors auto-detect the new deployment without manual edit
+    const swVersion = 'v' + Date.now();
+    const swContent = SW_TEMPLATE.replace('__VERSION__', swVersion);
+    dbg.log(`SW généré avec CACHE_VERSION=${swVersion}`, 'ok');
+
     let downloadFilename;
     let isZipped = false;
+    showLoader(willChunk ? `Construction du ZIP (${chunks.length} chunks)…` : 'Construction du ZIP…');
+    const zip = new JSZip();
+    zip.file('index.html', html);
+    zip.file('sw.js', swContent);
+    zip.file('data.json', dataJson);
     if (willChunk) {
-      // Build a zip containing index.html + all chunks
-      showLoader(`Construction du ZIP (${chunks.length} chunks)…`);
-      const zip = new JSZip();
-      zip.file('index.html', html);
       chunks.forEach((c, i) => {
         zip.file(`chunk-${String(i+1).padStart(3, '0')}.json`, JSON.stringify({ data: c }));
       });
-      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
-      dbg.log(`ZIP généré: ${humanSize(zipBlob.size)}`, 'ok');
-      downloadFilename = `archive-${namePart}-${date}.zip`;
-      isZipped = true;
-      const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement('a');
-      a.href = url; a.download = downloadFilename;
-      document.body.appendChild(a); a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-    } else {
-      // Single HTML file fits, use original flow
-      downloadFilename = `index-${namePart}-${date}.html`;
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = downloadFilename;
-      document.body.appendChild(a); a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
     }
+    const zipBlob = await zip.generateAsync({ type: 'blob', compression: willChunk ? 'STORE' : 'DEFLATE' });
+    dbg.log(`ZIP généré: ${humanSize(zipBlob.size)}`, 'ok');
+    downloadFilename = `archive-${namePart}-${date}.zip`;
+    isZipped = true;
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = url; a.download = downloadFilename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
     hideLoader();
 
     // Build the shareable URL with password in fragment
@@ -2035,14 +2117,10 @@ async function doExportShareableHTML(password) {
     const shareUrl = baseUrl + '#k=' + encodeURIComponent(password);
     document.getElementById('rm-filename').textContent = downloadFilename;
     document.getElementById('rm-url').textContent = shareUrl;
-    // Update step 2 wording depending on zip vs single file
+    // Update step 2 wording
     const step2El = document.getElementById('rm-step-2');
     if (step2El) {
-      if (isZipped) {
-        step2El.innerHTML = '<strong>2.</strong> <strong>Décompresse le ZIP</strong> (clic droit → Extraire). Tu obtiens un <code>index.html</code> + plusieurs <code>chunk-XXX.json</code>. Upload TOUS ces fichiers dans le dossier <code>pwa/</code> de ton dépôt GitHub (ils écraseront les anciens).';
-      } else {
-        step2El.innerHTML = '<strong>2.</strong> Renomme-le <code>index.html</code> et upload-le sur ton dépôt GitHub à la place de l\'ancien.';
-      }
+      step2El.innerHTML = '<strong>2.</strong> <strong>Décompresse le ZIP</strong> (clic droit → Extraire). Copie TOUS les fichiers extraits (<code>index.html</code>, <code>sw.js</code>, et les <code>chunk-*.json</code>) dans le dossier <code>pwa/</code> de ton dépôt GitHub local, puis push via GitHub Desktop. Le <code>sw.js</code> est régénéré à chaque export pour que les destinataires détectent automatiquement la nouvelle version.';
     }
     document.getElementById('result-modal').classList.add('show');
     dbg.log(`URL partage: ${shareUrl}`, 'ok');
@@ -2070,15 +2148,73 @@ document.getElementById('rm-copy').addEventListener('click', async () => {
 
 document.getElementById('export-shareable').addEventListener('click', exportShareableHTML);
 
+// Export only the viewer code + a fresh sw.js (no data, no chunks).
+// Used to push viewer updates without re-uploading hundreds of MB of chunks.
+document.getElementById('export-viewer-only').addEventListener('click', async () => {
+  showLoader('Préparation du viewer…');
+  try {
+    const cloned = document.documentElement.cloneNode(true);
+    cloned.querySelector('#preloaded-data').textContent = 'null';
+    cloned.querySelector('#conv-list').innerHTML = '';
+    cloned.querySelector('#messages').innerHTML = '';
+    const ch = cloned.querySelector('#chat-header'); if (ch) ch.style.display = 'none';
+    const es = cloned.querySelector('#empty-state'); if (es) es.style.display = '';
+    const dl = cloned.querySelector('#debug-log'); if (dl) { dl.classList.remove('show'); cloned.querySelector('#debug-log-body').innerHTML = ''; }
+    const html = '<!DOCTYPE html>\n' + cloned.outerHTML;
+    const swVersion = 'v' + Date.now();
+    const swContent = SW_TEMPLATE.replace('__VERSION__', swVersion);
+
+    const zip = new JSZip();
+    zip.file('index.html', html);
+    zip.file('sw.js', swContent);
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `viewer-update-${date}.zip`;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    hideLoader();
+    alert(
+      'ZIP téléchargé : viewer-update-' + date + '.zip\n\n' +
+      'Décompresse-le, copie index.html et sw.js dans ton dossier GitHub local (en écrasant les anciens), puis push via GitHub Desktop.\n\n' +
+      'Les chunks et data.json déjà sur GitHub ne sont PAS touchés — pas besoin de re-exporter les conversations.'
+    );
+  } catch (err) {
+    hideLoader();
+    alert('Erreur : ' + err.message);
+    dbg.log('Viewer-only export failed: ' + err.message, 'err');
+  }
+});
+
 /* ============== Load preloaded data (when opened from a shared file) ============== */
 
 async function loadPreloadedData() {
-  let raw;
+  let raw = null;
+  // 1. Try inline preloaded-data first (legacy / single-file mode)
   try {
-    raw = JSON.parse(document.getElementById('preloaded-data').textContent);
+    const inlineText = document.getElementById('preloaded-data').textContent.trim();
+    if (inlineText && inlineText !== 'null') {
+      raw = JSON.parse(inlineText);
+      dbg.log('Loaded inline preloaded-data');
+    }
   } catch (e) {
-    dbg.log('preloaded-data parse failed: ' + e.message, 'warn');
-    return;
+    dbg.log('inline preloaded-data parse failed: ' + e.message, 'warn');
+  }
+  // 2. If no inline data, try external data.json (decoupled mode — preferred)
+  if (!raw) {
+    try {
+      const resp = await fetch('./data.json', { cache: 'no-cache' });
+      if (resp.ok) {
+        raw = await resp.json();
+        dbg.log('Loaded manifest from data.json', 'ok');
+      } else {
+        dbg.log('data.json not found (HTTP ' + resp.status + ') — standalone mode');
+      }
+    } catch (e) {
+      dbg.log('No data.json available — standalone mode (this is normal locally)');
+    }
   }
   if (!raw) return;
 
@@ -2317,4 +2453,4 @@ dbg.init();
 </script>
 
 
-</body><f393c691-0348-4e98-a469-8f68f623564f></f393c691-0348-4e98-a469-8f68f623564f></html>
+</body></html>

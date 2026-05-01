@@ -1,13 +1,5 @@
-/* Service worker for the WhatsApp Archive PWA.
-   Strategy:
-   - On install: pre-cache the shell (index.html + manifest + icons).
-   - On fetch: network-first for index.html (so updates are picked up immediately when online),
-               cache-first for static assets (icons).
-   - On activate: clean old caches.
-   Bump CACHE_VERSION whenever you change the shell to force clients to update.
-*/
-
-const CACHE_VERSION = 'v4';
+/* Service worker for the WhatsApp Archive PWA - auto-generated. */
+const CACHE_VERSION = 'v1777647157397';
 const SHELL_CACHE = 'wa-archive-shell-' + CACHE_VERSION;
 const SHELL_FILES = [
   './',
@@ -42,10 +34,8 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  // Only handle same-origin requests
   if (url.origin !== self.location.origin) return;
 
-  // Network-first for index.html so updates show up when online
   if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) {
     event.respondWith(
       fetch(req).then((res) => {
@@ -57,7 +47,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for chunk-*.json so updates are picked up automatically
   if (/\/chunk-\d+\.json$/.test(url.pathname)) {
     event.respondWith(
       fetch(req).then((res) => {
@@ -71,7 +60,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for everything else (icons, etc.)
   event.respondWith(
     caches.match(req).then((cached) => cached || fetch(req).then((res) => {
       if (res.ok) {
@@ -83,7 +71,6 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Allow the page to trigger an immediate update check
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
