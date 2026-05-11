@@ -992,10 +992,10 @@
       <button class="back-btn" id="back-btn" aria-label="Retour">
         <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg>
       </button>
-      <div class="avatar" id="chat-avatar">M</div>
+      <div class="avatar" id="chat-avatar">Y</div>
       <div class="info">
-        <div class="name" id="chat-name">Mick</div>
-        <div class="stats" id="chat-stats">3430 messages · 1905 pièces jointes · 02 mai 2025 → 30 avr. 2026</div>
+        <div class="name" id="chat-name">Yasser</div>
+        <div class="stats" id="chat-stats">40577 messages · 25490 pièces jointes · 12 janv. 2020 → 03 déc. 2026</div>
       </div>
       <button class="swap-btn" id="swap-sender-btn" title="Choisir qui est 'toi' dans cette conversation">
         <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
@@ -1060,24 +1060,17 @@
     <h3>👤 Qui es-tu dans cette conversation ?</h3>
     <div class="sp-subtitle">Choisis l'expéditeur qui te représente. Ses messages s'afficheront en bulles vertes à droite.</div>
     <div id="sp-options"><div class="sp-option selected">
-      <div class="sp-avatar">M</div>
+      <div class="sp-avatar">Y</div>
       <div class="sp-info">
-        <div class="sp-name">Mick</div>
-        <div class="sp-count">2400 messages</div>
+        <div class="sp-name">Yasser</div>
+        <div class="sp-count">25897 messages</div>
       </div>
       <div class="sp-check">✓</div>
     </div><div class="sp-option">
       <div class="sp-avatar">B</div>
       <div class="sp-info">
-        <div class="sp-name">Baba</div>
-        <div class="sp-count">1014 messages</div>
-      </div>
-      <div class="sp-check">✓</div>
-    </div><div class="sp-option">
-      <div class="sp-avatar">A</div>
-      <div class="sp-info">
-        <div class="sp-name">Azhar</div>
-        <div class="sp-count">16 messages</div>
+        <div class="sp-name">Boss Zein Whatsaap Number</div>
+        <div class="sp-count">14680 messages</div>
       </div>
       <div class="sp-check">✓</div>
     </div></div>
@@ -1725,22 +1718,90 @@ function renderMessages(conv) {
   els.messages.appendChild(frag);
 }
 
+// Shared IntersectionObserver to lazy-load image placeholders as they enter the viewport
+let _imgLazyObserver = null;
+function getImageLazyObserver() {
+  if (_imgLazyObserver) return _imgLazyObserver;
+  _imgLazyObserver = new IntersectionObserver(async (entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const img = entry.target;
+      _imgLazyObserver.unobserve(img);
+      const fe = img._fileEntry;
+      try {
+        img.style.opacity = '0.5';
+        const url = await ensureFileLoaded(fe);
+        img.src = url;
+        img.style.opacity = '1';
+      } catch (e) {
+        img.alt = 'Erreur de chargement';
+        dbg.log(`Image load failed: ${e.message}`, 'warn');
+      }
+    }
+  }, { rootMargin: '200px' });
+  return _imgLazyObserver;
+}
+
 function renderAttachment(filename, fileEntry) {
   const ext = filename.split('.').pop().toLowerCase();
-  const { url, mime, size } = fileEntry;
+  const { url, mime, size, lazy } = fileEntry;
 
   // Image
   if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) {
     const img = document.createElement('img');
     img.className = 'media-img';
-    img.src = url;
     img.alt = filename;
     img.loading = 'lazy';
-    img.addEventListener('click', () => openLightbox(url));
+    img.style.background = '#E1E5E8';
+    img.style.minWidth = '120px';
+    img.style.minHeight = '80px';
+    if (lazy) {
+      // Use IntersectionObserver to fetch when scrolled into view
+      img._fileEntry = fileEntry;
+      img.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgNjAiPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNjAiIGZpbGw9IiNFMUU1RTgiLz48L3N2Zz4=';
+      img.style.opacity = '0.5';
+      getImageLazyObserver().observe(img);
+      img.addEventListener('click', async () => {
+        const u = await ensureFileLoaded(fileEntry);
+        openLightbox(u);
+      });
+    } else {
+      img.src = url;
+      img.addEventListener('click', () => openLightbox(url));
+    }
     return img;
   }
   // Video
   if (['mp4','mov','3gp','webm','mkv'].includes(ext)) {
+    if (lazy) {
+      // Show a "click to load" button to avoid wasting bandwidth on huge videos
+      const wrap = document.createElement('div');
+      wrap.className = 'media-doc';
+      wrap.style.cursor = 'pointer';
+      wrap.innerHTML = `
+        <div class="doc-icon" style="background:#D32F2F">▶</div>
+        <div class="doc-info">
+          <div class="doc-name">${escapeHTML(filename)}</div>
+          <div class="doc-meta">${humanSize(size)} · Cliquer pour charger la vidéo</div>
+        </div>
+      `;
+      wrap.addEventListener('click', async () => {
+        wrap.querySelector('.doc-meta').textContent = 'Chargement…';
+        try {
+          const u = await ensureFileLoaded(fileEntry);
+          const vid = document.createElement('video');
+          vid.className = 'media-video';
+          vid.src = u;
+          vid.controls = true;
+          vid.preload = 'auto';
+          vid.autoplay = true;
+          wrap.parentNode.replaceChild(vid, wrap);
+        } catch (e) {
+          wrap.querySelector('.doc-meta').textContent = 'Erreur: ' + e.message;
+        }
+      });
+      return wrap;
+    }
     const vid = document.createElement('video');
     vid.className = 'media-video';
     vid.src = url;
@@ -1750,9 +1811,41 @@ function renderAttachment(filename, fileEntry) {
   }
   // Audio (including .opus voice notes) — custom WhatsApp-style player
   if (['opus','mp3','m4a','aac','ogg','wav','amr'].includes(ext)) {
-    return createAudioPlayer(url, filename, size);
+    return createAudioPlayer(fileEntry, filename, size);
   }
   // Document (PDF, DOC, etc.)
+  if (lazy) {
+    const a = document.createElement('div');
+    a.className = 'media-doc';
+    a.style.cursor = 'pointer';
+    const isKnownDoc = ['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','csv','zip'].includes(ext);
+    a.classList.toggle('unknown', !isKnownDoc);
+    a.innerHTML = `
+      <div class="doc-icon">${ext.toUpperCase().slice(0,4)}</div>
+      <div class="doc-info">
+        <div class="doc-name">${escapeHTML(filename)}</div>
+        <div class="doc-meta">${humanSize(size)} · Ouvrir / Télécharger</div>
+      </div>
+    `;
+    a.addEventListener('click', async () => {
+      a.querySelector('.doc-meta').textContent = 'Chargement…';
+      try {
+        const u = await ensureFileLoaded(fileEntry);
+        const link = document.createElement('a');
+        link.href = u;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        a.querySelector('.doc-meta').textContent = humanSize(size) + ' · Ouvert';
+      } catch (e) {
+        a.querySelector('.doc-meta').textContent = 'Erreur: ' + e.message;
+      }
+    });
+    return a;
+  }
   const a = document.createElement('a');
   a.href = url;
   a.target = '_blank';
@@ -1774,7 +1867,15 @@ function renderAttachment(filename, fileEntry) {
 
 let currentlyPlayingAudio = null;
 
-function createAudioPlayer(url, filename, size) {
+function createAudioPlayer(fileEntryOrUrl, filename, size) {
+  // Accept either a fileEntry (with .url or .lazy) or a plain URL string.
+  let fileEntry;
+  if (typeof fileEntryOrUrl === 'string') {
+    fileEntry = { url: fileEntryOrUrl, lazy: false, mime: 'audio/ogg', size };
+  } else {
+    fileEntry = fileEntryOrUrl;
+  }
+
   const wrap = document.createElement('div');
   wrap.className = 'custom-audio';
   wrap.innerHTML = `
@@ -1792,9 +1893,19 @@ function createAudioPlayer(url, filename, size) {
     <button class="ca-speed" type="button" aria-label="Vitesse">1x</button>
   `;
 
-  const audio = new Audio();
-  audio.preload = 'metadata';
-  audio.src = url;
+  const audio = document.createElement('audio');
+  audio.preload = 'none';
+  audio.style.display = 'none';
+  wrap.appendChild(audio);
+  let srcSet = false;
+
+  // Detailed error logging — tells us exactly what's failing
+  audio.addEventListener('error', () => {
+    if (!audio.error) return;
+    const codes = {1:'Annulé', 2:'Réseau', 3:'Décodage', 4:'Source non supportée'};
+    const code = codes[audio.error.code] || 'inconnu';
+    dbg.log(`Audio ${filename}: ${code} (code ${audio.error.code})`, 'err');
+  });
 
   const playBtn = wrap.querySelector('.ca-play');
   const iconPlay = wrap.querySelector('.ca-icon-play');
@@ -1848,16 +1959,48 @@ function createAudioPlayer(url, filename, size) {
     iconPause.style.display = '';
   });
 
-  playBtn.addEventListener('click', () => {
+  async function tryPlay() {
+    if (!srcSet) {
+      try {
+        // Lazy: fetch + decrypt the file's chunks now
+        const url = await ensureFileLoaded(fileEntry);
+        audio.src = url;
+        audio.load();
+        srcSet = true;
+      } catch (e) {
+        dbg.log(`Audio ${filename}: chargement échoué: ${e.message}`, 'err');
+        alert(`Impossible de charger ce vocal (${filename}).\n\nErreur : ${e.message}`);
+        return false;
+      }
+    }
+    try {
+      await audio.play();
+      return true;
+    } catch (e) {
+      dbg.log(`Audio ${filename}: 1ère tentative échouée (${e.message}), retry…`, 'warn');
+      audio.removeAttribute('src');
+      audio.load();
+      audio.src = fileEntry.url;
+      audio.load();
+      try {
+        await audio.play();
+        dbg.log(`Audio ${filename}: retry OK`, 'ok');
+        return true;
+      } catch (e2) {
+        dbg.log(`Audio ${filename} échec définitif: ${e2.message}`, 'err');
+        alert(`Impossible de lire ce vocal (${filename}).\n\nL'erreur : ${e2.message}`);
+        return false;
+      }
+    }
+  }
+
+  playBtn.addEventListener('click', async () => {
     if (audio.paused) {
-      // Pause any other audio currently playing
       if (currentlyPlayingAudio && currentlyPlayingAudio !== audio) {
         currentlyPlayingAudio.pause();
       }
-      audio.play().catch((e) => {
-        dbg.log('Audio play failed: ' + e.message, 'warn');
-      });
       currentlyPlayingAudio = audio;
+      await tryPlay();
     } else {
       audio.pause();
     }
@@ -2092,6 +2235,42 @@ els.showHelp.addEventListener('click', () => {
   );
 });
 
+/* ============== IndexedDB-based cache (replaces localStorage at scale) ============== */
+// localStorage has a hard 5-10MB quota. For 26000+ file entries, we need IndexedDB.
+const idbCache = {
+  db: null,
+  async open() {
+    if (this.db) return this.db;
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('wa-archive-cache', 1);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('cache')) db.createObjectStore('cache');
+      };
+      req.onsuccess = () => { this.db = req.result; resolve(this.db); };
+      req.onerror = () => reject(req.error);
+    });
+  },
+  async get(key) {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('cache', 'readonly');
+      const req = tx.objectStore('cache').get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  },
+  async set(key, value) {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('cache', 'readwrite');
+      tx.objectStore('cache').put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+};
+
 /* ============== Hash + canonicalization helpers (for incremental exports) ============== */
 
 async function sha256Hex(stringOrBytes) {
@@ -2190,6 +2369,30 @@ async function decryptPayload(encObj, password) {
     { name: 'AES-GCM', iv: iv }, key, ciphertext
   );
   return JSON.parse(new TextDecoder().decode(plaintext));
+}
+
+// Encrypt raw bytes (used for individual media files in v3 architecture).
+// Returns { salt, iv, ciphertext } where ciphertext is base64 of the encrypted bytes.
+async function encryptBytes(bytes, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(password, salt);
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, bytes);
+  return {
+    salt: bytesToBase64(salt),
+    iv: bytesToBase64(iv),
+    ciphertext: bytesToBase64(new Uint8Array(ct)),
+  };
+}
+
+// Decrypt to raw bytes (returns Uint8Array)
+async function decryptBytes(encObj, password) {
+  const salt = base64ToBytes(encObj.salt);
+  const iv = base64ToBytes(encObj.iv);
+  const ct = base64ToBytes(encObj.ciphertext);
+  const key = await deriveKey(password, salt);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct);
+  return new Uint8Array(plain);
 }
 
 /* ============== Service worker template (regenerated on every export) ============== */
@@ -2326,109 +2529,125 @@ async function doExportShareableHTML(password) {
   dbg.log(`Export incrémental chiffré: ${state.conversations.length} conv, ${humanSize(totalSize)} de médias`);
 
   try {
-    // ---- Per-conversation export with incremental cache ----
-    // Each conversation is encrypted independently. Chunk filenames are derived from
-    // a hash of the conversation content, so unchanged conversations produce
-    // identical files (no re-download needed for the recipient).
+    // ---- Architecture v3 — per-file encryption with lazy loading ----
+    // For each conversation:
+    //   - The MESSAGES payload (small) is encrypted inline in data.json
+    //   - Each MEDIA file is encrypted INDIVIDUALLY as its own chunks
+    //   - File chunks are content-addressed (filename = hash of file bytes)
+    // Benefits:
+    //   * Supports conversations of ANY size (no V8 string-length limit)
+    //   * Lazy loading: father downloads a media only when he opens it
+    //   * Automatic dedup: same file (same bytes) across conversations = same chunks
     const CHUNK_SIZE = 18 * 1024 * 1024;
-    const cacheKey = 'export-cache-' + (password ? await sha256Hex(password) : 'nopw');
-    const cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
+    const cacheKey = 'export-cache-v3-' + (password ? await sha256Hex(password) : 'nopw');
+    // Cache stored in IndexedDB (no quota limit at scale)
+    // Structure: { [fileContentHash]: { salt, iv, chunks: [filenames], mime, size } }
+    let cache = {};
+    try {
+      cache = (await idbCache.get(cacheKey)) || {};
+      dbg.log(`Cache chargé: ${Object.keys(cache).length} fichier(s) connu(s)`);
+    } catch (e) {
+      dbg.log(`Cache vide ou erreur: ${e.message}`, 'warn');
+    }
     const newCache = {};
     const convsManifest = [];
-    const allChunkFiles = new Map(); // filename -> JSON content (only chunks to write)
-    let reusedConvs = 0, freshConvs = 0;
+    const allChunkFiles = new Map();
+    let reusedFiles = 0, freshFiles = 0;
 
     for (let ci = 0; ci < state.conversations.length; ci++) {
       const conv = state.conversations[ci];
       showLoader(`Préparation ${ci+1}/${state.conversations.length} : ${conv.name}…`);
-
-      // Materialize conv with base64-encoded media for hashing
-      const files = {};
-      let fi = 0;
-      for (const [filename, entry] of conv.files) {
-        fi++;
-        if (fi % 5 === 0) {
-          showLoader(`Encodage ${conv.name} (${fi}/${conv.files.size} fichiers)…`);
-          await new Promise(r => setTimeout(r, 0));
-        }
-        const blob = await fetch(entry.url).then(r => r.blob());
-        const bytes = new Uint8Array(await blob.arrayBuffer());
-        files[filename] = bytesToBase64(bytes);
-      }
       const messagesNorm = conv.messages.map(m => ({
         ...m,
         timestamp: m.timestamp ? m.timestamp.toISOString() : null,
       }));
-      const convPayload = {
-        name: conv.name,
-        messages: messagesNorm,
-        files,
-        youSender: conv.youSender || null,
-      };
-      const cHash = await conversationContentHash({
-        name: conv.name,
-        youSender: conv.youSender || null,
-        messages: messagesNorm,
-        files,
-      });
 
-      // Cached entry?
-      const prev = cache[cHash];
-      if (prev && prev.salt && prev.iv && Array.isArray(prev.chunks) && prev.chunks.length) {
-        dbg.log(`  ↺ "${conv.name}" inchangée (${prev.chunks.length} chunks réutilisés)`, 'ok');
-        convsManifest.push({
-          name: conv.name,
-          contentHash: cHash,
-          salt: prev.salt,
-          iv: prev.iv,
-          algo: 'AES-256-GCM/PBKDF2-SHA256',
-          iter: PBKDF2_ITERATIONS,
-          chunks: prev.chunks,
-        });
-        newCache[cHash] = prev;
-        reusedConvs++;
-        continue;
+      // Reset counters per conversation for clearer logs
+      let convFreshFiles = 0;
+      let convReusedFiles = 0;
+
+      // --- Encrypt the files first (one by one, no huge payload) ---
+      const fileRefs = {}; // filename -> { salt, iv, chunks, mime, size, contentHash }
+      let fi = 0;
+      const totalFiles = conv.files.size;
+      for (const [filename, entry] of conv.files) {
+        fi++;
+        if (fi % 10 === 0 || totalFiles < 20) {
+          showLoader(`🔐 ${conv.name}: fichier ${fi}/${totalFiles}…`);
+          await new Promise(r => setTimeout(r, 0));
+        }
+        try {
+          const blob = await fetch(entry.url).then(r => r.blob());
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          // Hash file content (bytes-only) for stable, content-addressed naming
+          const fHash = await sha256Hex(bytes);
+
+          let fEntry;
+          const prev = cache[fHash];
+          if (prev && prev.chunks && prev.chunks.length) {
+            // Reuse: same file bytes were already encrypted in a previous export
+            fEntry = prev;
+            reusedFiles++;
+            convReusedFiles++;
+            // Note: we don't re-emit chunks for reused files (they're already on GitHub)
+          } else {
+            const enc = await encryptBytes(bytes, password);
+            const chunkList = [];
+            for (let off = 0; off < enc.ciphertext.length; off += CHUNK_SIZE) {
+              chunkList.push(enc.ciphertext.slice(off, off + CHUNK_SIZE));
+            }
+            const prefix = 'file-' + fHash.slice(0, 16);
+            const chunkFilenames = chunkList.map((_, i) => `${prefix}-${String(i+1).padStart(3, '0')}.json`);
+            chunkList.forEach((c, i) => {
+              allChunkFiles.set(chunkFilenames[i], JSON.stringify({ data: c }));
+            });
+            fEntry = {
+              salt: enc.salt,
+              iv: enc.iv,
+              chunks: chunkFilenames,
+              mime: entry.mime,
+              size: entry.size,
+            };
+            freshFiles++;
+            convFreshFiles++;
+          }
+          newCache[fHash] = fEntry;
+          fileRefs[filename] = { ...fEntry, contentHash: fHash };
+        } catch (err) {
+          dbg.log(`  ⚠ "${filename}" non-encryptable: ${err.message}`, 'warn');
+        }
       }
 
-      // Fresh encryption
-      showLoader(`🔐 Chiffrement ${conv.name}…`);
-      const encrypted = await encryptPayload(convPayload, password);
-      const ct = encrypted.ciphertext;
-      const chunks = [];
-      for (let i = 0; i < ct.length; i += CHUNK_SIZE) chunks.push(ct.slice(i, i + CHUNK_SIZE));
-      const filenamePrefix = 'chunk-' + cHash.slice(0, 16);
-      const chunkFilenames = chunks.map((_, i) => `${filenamePrefix}-${String(i+1).padStart(3, '0')}.json`);
-      chunks.forEach((c, i) => {
-        allChunkFiles.set(chunkFilenames[i], JSON.stringify({ data: c }));
-      });
-      const entry = {
-        salt: encrypted.salt,
-        iv: encrypted.iv,
-        chunks: chunkFilenames,
+      // --- Build the small messages payload (no file data, just refs) ---
+      const messagesPayload = {
+        name: conv.name,
+        messages: messagesNorm,
+        files: fileRefs,
+        youSender: conv.youSender || null,
       };
+      const encMessages = await encryptPayload(messagesPayload, password);
+
       convsManifest.push({
         name: conv.name,
-        contentHash: cHash,
-        salt: entry.salt,
-        iv: entry.iv,
-        algo: 'AES-256-GCM/PBKDF2-SHA256',
-        iter: PBKDF2_ITERATIONS,
-        chunks: chunkFilenames,
+        messages: encMessages,
       });
-      newCache[cHash] = entry;
-      freshConvs++;
-      dbg.log(`  ✓ "${conv.name}" chiffrée (${chunks.length} chunks, ${humanSize(ct.length)})`, 'ok');
+      dbg.log(`  ✓ "${conv.name}": ${totalFiles} fichiers (${convFreshFiles} nouveaux, ${convReusedFiles} réutilisés)`, 'ok');
     }
 
-    // Persist updated cache (drops entries for conversations no longer present)
-    localStorage.setItem(cacheKey, JSON.stringify(newCache));
-    dbg.log(`Export: ${reusedConvs} conv réutilisée(s), ${freshConvs} nouvelle(s) ou modifiée(s)`, 'ok');
-    dbg.log(`Nouveaux chunks à uploader: ${allChunkFiles.size}`, 'ok');
+    // Save cache to IndexedDB (no quota limit, unlike localStorage)
+    try {
+      await idbCache.set(cacheKey, newCache);
+      dbg.log(`Cache sauvegardé en IndexedDB (${Object.keys(newCache).length} entrées)`, 'ok');
+    } catch (e) {
+      dbg.log(`Cache save failed: ${e.message}`, 'warn');
+    }
+    dbg.log(`Export terminé: ${freshFiles} fichier(s) nouveaux, ${reusedFiles} réutilisé(s)`, 'ok');
+    dbg.log(`Chunks à uploader: ${allChunkFiles.size}`, 'ok');
 
     const manifestPayload = {
       encrypted: true,
-      version: 2,
-      perConversation: true,
+      version: 3,
+      perFile: true,
       conversations: convsManifest,
     };
 
@@ -2589,7 +2808,47 @@ async function loadPreloadedData() {
     const fragMatch = window.location.hash.match(/[#&]k=([^&]+)/);
     let password = fragMatch ? decodeURIComponent(fragMatch[1]) : null;
 
-    // ===== NEW FORMAT v2: per-conversation chunks =====
+    // ===== FORMAT v3: per-file encryption with lazy loading =====
+    if (raw.perFile && Array.isArray(raw.conversations)) {
+      dbg.log(`Per-file format v3: ${raw.conversations.length} conv(s), lazy loading enabled`);
+      // Validate password by trying to decrypt the first conv's messages
+      let validPassword = null;
+      while (!validPassword) {
+        if (!password) {
+          password = await promptPassword(fragMatch ? 'Mot de passe incorrect' : '');
+        }
+        try {
+          showLoader('Vérification du mot de passe…');
+          await decryptPayload(raw.conversations[0].messages, password);
+          validPassword = password;
+          dbg.log('Password OK (v3)', 'ok');
+        } catch (e) {
+          dbg.log('Password test failed: ' + e.message, 'warn');
+          password = null;
+        }
+      }
+      // Make password accessible globally for lazy file loading
+      window.__waArchivePassword = validPassword;
+
+      // Decrypt messages for each conv (small, fast)
+      hideProgress();
+      const allDecrypted = [];
+      for (let ci = 0; ci < raw.conversations.length; ci++) {
+        const cv = raw.conversations[ci];
+        showLoader(`Chargement des messages (${ci+1}/${raw.conversations.length})…`);
+        try {
+          const decrypted = await decryptPayload(cv.messages, validPassword);
+          // decrypted = { name, messages, files: { filename: { salt, iv, chunks, mime, size } }, youSender }
+          allDecrypted.push(decrypted);
+          dbg.log(`  ✓ "${decrypted.name}" déchiffrée (${Object.keys(decrypted.files || {}).length} fichiers en lazy)`, 'ok');
+        } catch (e) {
+          dbg.log(`  ✗ Conv ${ci+1}: ${e.message}`, 'err');
+        }
+      }
+      hideLoader();
+      raw = { conversations: allDecrypted };
+    }
+    // ===== FORMAT v2: per-conversation chunks (legacy) =====
     if (raw.perConversation && Array.isArray(raw.conversations)) {
       dbg.log(`Per-conversation format: ${raw.conversations.length} conv(s)`);
       // Verify password by trying to decrypt the first conv (small overhead)
@@ -2728,13 +2987,29 @@ async function loadPreloadedData() {
   dbg.log(`Loading ${raw.conversations.length} preloaded conversation(s)…`, 'ok');
   for (const c of raw.conversations) {
     const files = new Map();
-    for (const [filename, b64] of Object.entries(c.files || {})) {
+    for (const [filename, ref] of Object.entries(c.files || {})) {
       try {
-        const ext = filename.split('.').pop().toLowerCase();
-        const mime = mimeFor(ext);
-        const bytes = base64ToBytes(b64);
-        const blob = new Blob([bytes], { type: mime });
-        files.set(filename, { url: URL.createObjectURL(blob), mime, size: bytes.length });
+        if (typeof ref === 'string') {
+          // Legacy v1/v2 format: ref is the base64 of the file
+          const ext = filename.split('.').pop().toLowerCase();
+          const mime = mimeFor(ext);
+          const bytes = base64ToBytes(ref);
+          const blob = new Blob([bytes], { type: mime });
+          files.set(filename, { url: URL.createObjectURL(blob), mime, size: bytes.length, lazy: false });
+        } else if (ref && Array.isArray(ref.chunks)) {
+          // v3 format: lazy entry. Stores enc metadata; actual bytes fetched on demand.
+          const ext = filename.split('.').pop().toLowerCase();
+          files.set(filename, {
+            url: null,
+            mime: ref.mime || mimeFor(ext),
+            size: ref.size || 0,
+            chunks: ref.chunks,
+            salt: ref.salt,
+            iv: ref.iv,
+            lazy: true,
+            loadPromise: null,
+          });
+        }
       } catch (e) {
         dbg.log(`Skipped media "${filename}": ${e.message}`, 'warn');
       }
@@ -2753,6 +3028,33 @@ async function loadPreloadedData() {
     });
   }
   dbg.log(`Preloaded ${state.conversations.length} conversation(s) ready`, 'ok');
+}
+
+// Lazy-load a file entry (v3 format): fetch its chunks, decrypt, return blob URL.
+// Subsequent calls return the cached URL.
+async function ensureFileLoaded(fileEntry) {
+  if (fileEntry.url) return fileEntry.url;
+  if (fileEntry.loadPromise) return fileEntry.loadPromise;
+  if (!fileEntry.lazy) return fileEntry.url;
+  fileEntry.loadPromise = (async () => {
+    const password = window.__waArchivePassword;
+    if (!password) throw new Error('Mot de passe non disponible');
+    const parts = [];
+    for (const ch of fileEntry.chunks) {
+      const r = await fetch(ch, { cache: 'force-cache' });
+      if (!r.ok) throw new Error(`HTTP ${r.status} sur ${ch}`);
+      parts.push((await r.json()).data);
+    }
+    const bytes = await decryptBytes({
+      salt: fileEntry.salt,
+      iv: fileEntry.iv,
+      ciphertext: parts.join(''),
+    }, password);
+    const blob = new Blob([bytes], { type: fileEntry.mime });
+    fileEntry.url = URL.createObjectURL(blob);
+    return fileEntry.url;
+  })();
+  return fileEntry.loadPromise;
 }
 
 function promptPassword(errorMsg) {
